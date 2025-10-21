@@ -36,10 +36,13 @@ const isPasswordMatch= await bcrypt.compare(password,user.password);
 if(!isPasswordMatch){
     return res.status(403).json({message: errorMsg,sucess:false});
 }
-const jwtToken= jwt.sign({id:user._id,email:user.email},process.env.JWT_SECRET,
+const jwtToken= jwt.sign(
+    {_id:user._id,email:user.email},
+     process.env.JWT_SECRET,
     {expiresIn:'24h'}
-    );
- res.status(200).json({message:"login successfully",sucess:true,
+     );
+ res.status(200)
+   .json({message:"login successfully",sucess:true,
  jwtToken,
  email,
     name:user.name
