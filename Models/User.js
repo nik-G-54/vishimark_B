@@ -15,6 +15,10 @@ const UserSchema= new Schema({
         type: String,
         required: true,
     },
+       profileImage:{              
+        type: String,
+        required: true,
+    }
 });
 const UserModel =mongoose.model('user',UserSchema);
 module.exports = UserModel;
