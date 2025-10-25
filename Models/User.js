@@ -11,9 +11,19 @@ const UserSchema= new Schema({
         required: true,
         unique:true,
     },
+   
     password:{
         type: String,
         required: true,
+    },
+    contact:{
+        type: String,
+        required: true,
+    }, 
+    userID:{
+        type: String,
+        required: true,
+        unique:true,
     },
        profileImage:{              
         type: String,

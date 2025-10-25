@@ -10,13 +10,30 @@ const signup = async (req, res) => {
     console.log("req.body:", req.body);       // Check if name/email/password exist
     console.log("req.file:", req.file);       // Check if file is uploaded
 
-    const { name, email, password } = req.body;
+    const { name, email, password, contact, userID } = req.body;
 
-    // Check if user already exists
-    const user = await UserModel.findOne({ email });
-    if (user) {
+    // Check if image is provided
+    if (!req.file) {
       return res.status(400).json({
-        message: "User already exists, you can login",
+        message: "Profile image is required",
+        success: false,
+      });
+    }
+
+    // Check if user already exists by email
+    const existingUserByEmail = await UserModel.findOne({ email });
+    if (existingUserByEmail) {
+      return res.status(400).json({
+        message: "User with this email already exists, you can login",
+        success: false,
+      });
+    }
+
+    // Check if userID already exists
+    const existingUserByID = await UserModel.findOne({ userID });
+    if (existingUserByID) {
+      return res.status(400).json({
+        message: "UserID already exists, please choose a different one",
         success: false,
       });
     }
@@ -24,22 +41,21 @@ const signup = async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Upload image to Cloudinary if file exists
-    let imageUrl = null;
-    if (req.file) {
-      console.log("Uploading file to Cloudinary...");
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "users", // optional folder in Cloudinary
-      });
-      console.log("Cloudinary upload result:", result);
-      imageUrl = result.secure_url;
-    }
+    // Upload image to Cloudinary (required)
+    console.log("Uploading file to Cloudinary...");
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "users", // optional folder in Cloudinary
+    });
+    console.log("Cloudinary upload result:", result);
+    const imageUrl = result.secure_url;
 
     // Create new user
     const newUser = new UserModel({
       name,
       email,
       password: hashedPassword,
+      contact,
+      userID,
       profileImage: imageUrl,
     });
 
@@ -86,6 +102,8 @@ const login = async (req, res) => {
       success: true,
       jwtToken,
       email,
+        // contact: Number(contact),
+      // userID,
       name: user.name,
       profileImage: user.profileImage, // Include profile image URL
     });
@@ -97,3 +115,7 @@ const login = async (req, res) => {
 };
 
 module.exports = { signup, login };
+
+
+
+
