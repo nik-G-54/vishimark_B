@@ -221,37 +221,27 @@ const AttendanceModel = require("../Models/Attendance");
 
 const markAttendance = async (req, res) => {
   try {
-    console.log("📸 Received request for face verification");
-
     let imageBase64 = "";
 
-    // Accept file uploads or base64 image data
     if (req.file) {
       imageBase64 = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
     } else if (req.body.image) {
-      imageBase64 = req.body.image; // keep full data URI format
+      imageBase64 = req.body.image;
     } else {
       return res.status(400).json({ success: false, message: "No image provided" });
     }
 
-    const flaskURL = process.env.FLASK_URL || "http://127.0.0.1:5000/api/verify";
-    console.log("🔁 Sending image to Flask:", flaskURL);
+    const flaskURL = process.env.FLASK_URL || "https://visimarkml-3.onrender.com/api/verify";
 
-    // Send image to Flask
     const flaskResponse = await axios.post(
       flaskURL,
       { image: imageBase64 },
-      {
-        timeout: 20000,
-        headers: { "Content-Type": "application/json" },
-      }
-    ).catch(err => {
-      console.error("❌ Flask connection failed:", err.message);
+      { timeout: 20000, headers: { "Content-Type": "application/json" } }
+    ).catch(() => {
       throw new Error("Flask API not reachable");
     });
 
     const result = flaskResponse.data;
-    console.log("✅ Flask Response:", result);
 
     if (!result || !result.recognized || result.recognized.length === 0) {
       return res.status(400).json({ success: false, message: "Face not recognized" });
@@ -293,9 +283,20 @@ const markAttendance = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Error in markAttendance:", err.message);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-module.exports = { markAttendance };
+const getUserAttendance = async (req, res) => {
+  try {
+    const userId = req.user.id; // decoded from JWT middleware
+    const attendance = await AttendanceModel.find({ userId }).sort({ date: -1 });
+    return res.status(200).json({ success: true, data: attendance });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+module.exports = { markAttendance, getUserAttendance };
+
+

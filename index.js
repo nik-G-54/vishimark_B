@@ -5,7 +5,7 @@ const cors= require('cors'); // this is use when two different server are try to
 const bodyParser =require('body-parser');  //this is used to read body data  this is type of library
 const AuthRouter=require('./Routes/Authrouter.js');
 const AttendanceRouter = require('./Routes/AttendanceRouter.js');
-
+// const attendanceRoutes = require("./Routes/attendance");
 require('dotenv').config();
 
 require('./Models/db.js');
@@ -15,6 +15,7 @@ const PORT = process.env.PORT|| 8080;
 app.get('/ping',(req,res)=>{
     res.send('pong');
 });
+// app.use("/attendance", attendanceRoutes);
 
 app.use(cors());// when we use   [.use ]then it is a type of malware or middleware
 app.use(bodyParser.json());
