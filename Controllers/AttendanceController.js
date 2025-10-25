@@ -131,32 +131,123 @@
 
 
 
+// const axios = require("axios");
+// const AttendanceModel = require("../Models/Attendance");
+
+// /**
+//  * POST /attendance/mark
+//  * Body: { image: "data:image/jpeg;base64,..." }
+//  * Calls Flask ML API for verification and saves attendance in MongoDB.
+//  */
+// const markAttendance = async (req, res) => {
+//   try {
+//     console.log("📸 Received request for face verification");
+
+//     const { image } = req.body;
+//     if (!image) {
+//       return res.status(400).json({ success: false, message: "No image provided" });
+//     }
+
+//     const flaskURL = process.env.FLASK_URL || "http://127.0.0.1:5000/api/verify";
+//      console.log("🔁 Sending image to Flask:", flaskURL);
+
+//     const flaskResponse = await axios.post(flaskURL, { image }, {
+//       timeout: 10000,
+//       headers: {
+//         "Content-Type": "application/json",
+//         ...(process.env.ML_API_KEY ? { "x-api-key": process.env.ML_API_KEY } : {})
+//       }
+//     });
+
+//     const result = flaskResponse.data;
+//     console.log("✅ Flask Response:", result);
+
+//     if (!result || !result.recognized || result.recognized.length === 0) {
+//       return res.status(400).json({ success: false, message: "Face not recognized" });
+//     }
+
+//     const match = result.recognized.find(r => r.matched);
+//     if (!match) {
+//       return res.status(400).json({ success: false, message: "No valid match found" });
+//     }
+
+
+// // const result = {
+// //   recognized: [{ matched: true, userId: "101", username: "Aviral", confidence: 0.95 }]
+// // };
+
+//     const { userId, username, confidence } = match;
+
+//     const now = new Date();
+//     const date = now.toISOString().split("T")[0];
+//     const time = now.toTimeString().split(" ")[0];
+
+//     const existing = await AttendanceModel.findOne({ userId, date });
+//     if (existing) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Attendance already marked today",
+//         data: { userId, username, date }
+//       });
+//     }
+
+//     const attendance = new AttendanceModel({
+//       userId,
+//       username,
+//       date,
+//       time,
+//       confidence,
+//       status: "Present"
+//     });
+//     await attendance.save();
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Attendance marked successfully",
+//       data: { userId, username, confidence, date, time }
+//     });
+
+//   } catch (err) {
+//     console.error("❌ Error in markAttendance:", err.message);
+//     return res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
+
+// module.exports = { markAttendance };
+
+
 const axios = require("axios");
 const AttendanceModel = require("../Models/Attendance");
 
-/**
- * POST /attendance/mark
- * Body: { image: "data:image/jpeg;base64,..." }
- * Calls Flask ML API for verification and saves attendance in MongoDB.
- */
 const markAttendance = async (req, res) => {
   try {
     console.log("📸 Received request for face verification");
 
-    const { image } = req.body;
-    if (!image) {
+    let imageBase64 = "";
+
+    // Accept file uploads or base64 image data
+    if (req.file) {
+      imageBase64 = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
+    } else if (req.body.image) {
+      imageBase64 = req.body.image; // keep full data URI format
+    } else {
       return res.status(400).json({ success: false, message: "No image provided" });
     }
 
     const flaskURL = process.env.FLASK_URL || "http://127.0.0.1:5000/api/verify";
-     console.log("🔁 Sending image to Flask:", flaskURL);
+    console.log("🔁 Sending image to Flask:", flaskURL);
 
-    const flaskResponse = await axios.post(flaskURL, { image }, {
-      timeout: 10000,
-      headers: {
-        "Content-Type": "application/json",
-        ...(process.env.ML_API_KEY ? { "x-api-key": process.env.ML_API_KEY } : {})
+    // Send image to Flask
+    const flaskResponse = await axios.post(
+      flaskURL,
+      { image: imageBase64 },
+      {
+        timeout: 20000,
+        headers: { "Content-Type": "application/json" },
       }
+    ).catch(err => {
+      console.error("❌ Flask connection failed:", err.message);
+      throw new Error("Flask API not reachable");
     });
 
     const result = flaskResponse.data;
@@ -171,13 +262,7 @@ const markAttendance = async (req, res) => {
       return res.status(400).json({ success: false, message: "No valid match found" });
     }
 
-
-// const result = {
-//   recognized: [{ matched: true, userId: "101", username: "Aviral", confidence: 0.95 }]
-// };
-
     const { userId, username, confidence } = match;
-
     const now = new Date();
     const date = now.toISOString().split("T")[0];
     const time = now.toTimeString().split(" ")[0];
@@ -187,7 +272,7 @@ const markAttendance = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Attendance already marked today",
-        data: { userId, username, date }
+        data: { userId, username, date },
       });
     }
 
@@ -197,14 +282,14 @@ const markAttendance = async (req, res) => {
       date,
       time,
       confidence,
-      status: "Present"
+      status: "Present",
     });
     await attendance.save();
 
     return res.status(201).json({
       success: true,
       message: "Attendance marked successfully",
-      data: { userId, username, confidence, date, time }
+      data: { userId, username, confidence, date, time },
     });
 
   } catch (err) {
@@ -214,4 +299,3 @@ const markAttendance = async (req, res) => {
 };
 
 module.exports = { markAttendance };
-
