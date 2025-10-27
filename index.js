@@ -19,6 +19,7 @@ app.get('/ping',(req,res)=>{
 
 app.use(cors());// when we use   [.use ]then it is a type of malware or middleware
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/auth',AuthRouter);
 app.use('/attendance', AttendanceRouter);
 
