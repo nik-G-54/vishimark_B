@@ -1,18 +1,20 @@
-
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const UserModel = require('../Models/User');
 const cloudinary = require('../config/cloudinary');
 
+// ==============================
+// SIGNUP CONTROLLER
+// ==============================
 const signup = async (req, res) => {
   try {
     console.log("=== SIGNUP START ===");
-    console.log("req.body:", req.body);       // Check if name/email/password exist
-    console.log("req.file:", req.file);       // Check if file is uploaded
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
 
     const { name, email, password, contact, userID } = req.body;
 
-    // Check if image is provided
+    // ✅ 1. Check for required image
     if (!req.file) {
       return res.status(400).json({
         message: "Profile image is required",
@@ -20,36 +22,35 @@ const signup = async (req, res) => {
       });
     }
 
-    // Check if user already exists by email
+    // ✅ 2. Check for existing email
     const existingUserByEmail = await UserModel.findOne({ email });
     if (existingUserByEmail) {
       return res.status(400).json({
-        message: "User with this email already exists, you can login",
+        message: "User with this email already exists. Please login.",
         success: false,
       });
     }
 
-    // Check if userID already exists
+    // ✅ 3. Check for existing userID
     const existingUserByID = await UserModel.findOne({ userID });
     if (existingUserByID) {
       return res.status(400).json({
-        message: "UserID already exists, please choose a different one",
+        message: "UserID already exists. Please choose a different one.",
         success: false,
       });
     }
 
-    // Hash the password
+    // ✅ 4. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Upload image to Cloudinary (required)
-    console.log("Uploading file to Cloudinary...");
+    // ✅ 5. Upload image to Cloudinary
+    console.log("Uploading to Cloudinary...");
     const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "users", // optional folder in Cloudinary
+      folder: "users",
     });
-    console.log("Cloudinary upload result:", result);
     const imageUrl = result.secure_url;
 
-    // Create new user
+    // ✅ 6. Save new user in MongoDB
     const newUser = new UserModel({
       name,
       email,
@@ -62,60 +63,85 @@ const signup = async (req, res) => {
     await newUser.save();
     console.log("User saved in MongoDB:", newUser);
 
-    // Send response
+    // ✅ 7. Create JWT Token
+    const token = jwt.sign(
+      { _id: newUser._id, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    // ✅ 8. Send Response
     res.status(201).json({
       message: "User registered successfully",
       success: true,
-      user: newUser,
+      token,
+      user: {
+        name: newUser.name,
+        email: newUser.email,
+        contact: newUser.contact,
+        userID: newUser.userID,
+        profileImage: newUser.profileImage,
+      },
     });
 
   } catch (err) {
     console.error("SIGNUP ERROR:", err);
-    res.status(500).json({ message: "Internal error", success: false });
+    res.status(500).json({
+      message: "Internal server error during signup",
+      success: false,
+    });
   }
 };
 
+// ==============================
+// LOGIN CONTROLLER
+// ==============================
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // ✅ 1. Find user
     const user = await UserModel.findOne({ email });
-    const errorMsg = "Auth failed or password is wrong";
+    const errorMsg = "Auth failed or password is incorrect";
 
     if (!user) {
       return res.status(403).json({ message: errorMsg, success: false });
     }
 
+    // ✅ 2. Check password
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
       return res.status(403).json({ message: errorMsg, success: false });
     }
 
-    const jwtToken = jwt.sign(
+    // ✅ 3. Generate token
+    const token = jwt.sign(
       { _id: user._id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
+    // ✅ 4. Send Response
     res.status(200).json({
-      message: "Login successfully",
+      message: "Login successful",
       success: true,
-      jwtToken,
-      email,
-        // contact: Number(contact),
-      // userID,
-      name: user.name,
-      profileImage: user.profileImage, // Include profile image URL
+      token,
+      user: {
+        name: user.name,
+        email: user.email,
+        contact: user.contact,
+        userID: user.userID,
+        profileImage: user.profileImage,
+      },
     });
 
   } catch (err) {
     console.error("LOGIN ERROR:", err);
-    res.status(500).json({ message: "Internal error", success: false });
+    res.status(500).json({
+      message: "Internal server error during login",
+      success: false,
+    });
   }
 };
 
 module.exports = { signup, login };
-
-
-
-

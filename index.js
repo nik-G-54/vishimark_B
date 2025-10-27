@@ -17,7 +17,16 @@ app.get('/ping',(req,res)=>{
 });
 // app.use("/attendance", attendanceRoutes);
 
-app.use(cors());// when we use   [.use ]then it is a type of malware or middleware
+const allowedOrigins = [
+  "http://localhost:5173",               // <-- for your local React app
+  "https://visimark-delta.vercel.app",   // <-- for your deployed frontend
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/auth',AuthRouter);
