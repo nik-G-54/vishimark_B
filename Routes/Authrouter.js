@@ -19,8 +19,13 @@
 
 
 
+
+const express = require("express");
+const router = express.Router();
+
 const User = require("../Models/User");
 const { verifyToken } = require("../Middleware/authMiddleware");
+
 
 router.get("/auth/me", verifyToken, async (req, res) => {
   try {
@@ -38,6 +43,9 @@ router.get("/auth/me", verifyToken, async (req, res) => {
       },
     });
   } catch (err) {
+    console.error("Error in /auth/me:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
+
+module.exports = router;
