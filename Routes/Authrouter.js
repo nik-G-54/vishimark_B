@@ -19,17 +19,24 @@
 
 
 
-
 const express = require("express");
 const router = express.Router();
 
-const User = require("../Models/User");
+const { signup, login } = require("../Controllers/Authcontroller");
+const { signupValidation, loginValidation } = require("../Middleware/AuthValidation");
 const { verifyToken } = require("../Middleware/authMiddleware");
+const upload = require("../Middleware/multer");
+const User = require("../Models/User");
+
+router.post("/signup", signupValidation, upload.single("image"), signup);
+
+
+router.post("/login", loginValidation, login);
 
 
 router.get("/auth/me", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id); // use _id from JWT
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
@@ -49,3 +56,4 @@ router.get("/auth/me", verifyToken, async (req, res) => {
 });
 
 module.exports = router;
+
