@@ -34,7 +34,7 @@ router.post("/signup", signupValidation, upload.single("image"), signup);
 router.post("/login", loginValidation, login);
 
 
-router.get("/auth/me", verifyToken, async (req, res) => {
+router.get("/me", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
