@@ -215,28 +215,45 @@
 
 // module.exports = { markAttendance };
 
-
+const fs = require("fs");
 const axios = require("axios");
 const AttendanceModel = require("../Models/Attendance");
 
 const markAttendance = async (req, res) => {
   try {
-    let imageBase64 = "";
+    // let imageBase64 = "";
+// const formData= await req.formData();
+// console.log(formData, "🚀 formData received in markAttendance");
+//     const FormData = formData.getAll(file);
+//     console.log(FormData, "🚀 FormData received in markAttendance");
+   // console.log(req.file, "🚀 req.file received in markAttendance");
 
-    if (req.file) {
-      imageBase64 = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
-    } else if (req.body.image) {
-      imageBase64 = req.body.image;
-    } else {
-      return res.status(400).json({ success: false, message: "No image provided" });
-    }
+    // if (req.file) {
+    //   imageBase64 = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
+    // } else if (req.body.image) {
+    //   imageBase64 = req.body.image;
+    // } else {
+    //   return res.status(400).json({ success: false, message: "No image provided" });
+    // }
+    // console.log(imageBase64, "🚀 imageBase64 prepared for Flask");
+    
+if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "Image file is required",
+            });
+        }
 
+        // ✅ Read uploaded file and convert to Base64
+        const imageBuffer = fs.readFileSync(req.file.path);
+        const imageBase64 = imageBuffer.toString("base64");
+  // console.log(imageBase64, "🚀 imageBase64 prepared for Flask");
     const flaskURL = process.env.FLASK_URL || "https://visimarkml-3.onrender.com/api/verify";
 
     const flaskResponse = await axios.post(
       flaskURL,
       { image: imageBase64 },
-      { timeout: 20000, headers: { "Content-Type": "application/json" } }
+      {  headers: { "Content-Type": "application/json" } }
     ).catch(() => {
       throw new Error("Flask API not reachable");
     });
@@ -283,6 +300,7 @@ const markAttendance = async (req, res) => {
     });
 
   } catch (err) {
+    console.log("❌ Error in markAttendance:", err);
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

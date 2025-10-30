@@ -3,9 +3,7 @@ const jwt = require('jsonwebtoken');
 const UserModel = require('../Models/User');
 const cloudinary = require('../config/cloudinary');
 
-// ==============================
-// SIGNUP CONTROLLER
-// ==============================
+
 const signup = async (req, res) => {
   try {
     console.log("=== SIGNUP START ===");
@@ -31,7 +29,7 @@ const signup = async (req, res) => {
       });
     }
 
-    // ✅ 3. Check for existing userID
+    
     const existingUserByID = await UserModel.findOne({ userID });
     if (existingUserByID) {
       return res.status(400).json({
